@@ -11,7 +11,6 @@ import Logger from "../helpers/Logger";
 import File from "../helpers/File";
 import Json from "../helpers/Json";
 import Vault from "../helpers/Vault";
-import { defaultModels } from "../copilot-chat/store/slices/message";
 
 export interface SettingsObserver {
 	onSettingsUpdate(): Promise<void>;
@@ -24,20 +23,6 @@ export type Hotkeys = {
 	partial: string;
 	next: string;
 	disable: string;
-};
-
-export type CopilotChatSettings = {
-	deviceCode: string | null;
-	pat: string | null; // Personal Access Token to create the access token
-	// Access token to authenticate the user
-	accessToken: {
-		token: string | null;
-		expiresAt: number | null;
-	};
-	selectedModel?: {
-		label: string;
-		value: string;
-	};
 };
 
 export interface CopilotPluginSettings {
@@ -54,11 +39,7 @@ export interface CopilotPluginSettings {
 	deviceSpecificSettings: string[];
 	useDeviceSpecificSettings: boolean;
 	proxy: string;
-	chatSettings?: CopilotChatSettings;
-	systemPrompt: string;
-	invertEnterSendBehavior: boolean;
 	extraCACerts?: string;
-	enableMarkdownRendering: boolean;
 }
 
 export const DEFAULT_SETTINGS: CopilotPluginSettings = {
@@ -82,20 +63,7 @@ export const DEFAULT_SETTINGS: CopilotPluginSettings = {
 	deviceSpecificSettings: ["nodePath"],
 	useDeviceSpecificSettings: false,
 	proxy: "",
-	chatSettings: {
-		deviceCode: null,
-		pat: null,
-		accessToken: {
-			token: null,
-			expiresAt: null,
-		},
-		selectedModel: defaultModels[4],
-	},
-	systemPrompt:
-		"You are GitHub Copilot, an AI assistant. You are helping the user with their tasks in Obsidian.",
-	invertEnterSendBehavior: false,
 	extraCACerts: "",
-	enableMarkdownRendering: true,
 };
 
 class CopilotPluginSettingTab extends PluginSettingTab {
@@ -422,64 +390,6 @@ class CopilotPluginSettingTab extends PluginSettingTab {
 						});
 					}),
 			);
-
-		containerEl.createEl("h1", { text: "Copilot Chat Settings" });
-
-		containerEl.createEl("p", {
-			text: "When authenticating in Copilot Chat, a personal token will be encrypted and stored as a file in the plugin folder. This file is called `secure-credentials.dat`. It is only decrytable by your machine but you should never share it with anyone.",
-			cls: "copilot-settings-warning",
-		});
-
-		new Setting(containerEl)
-			.setName("Enable markdown rendering")
-			.setDesc(
-				"Enable or disable markdown rendering in chat messages. When disabled, messages will be displayed as plain text with basic formatting.",
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.enableMarkdownRendering)
-					.onChange(async (value) => {
-						this.plugin.settings.enableMarkdownRendering = value;
-						await this.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName("Invert Enter/Shift+Enter behavior")
-			.setDesc(
-				"When enabled, pressing Enter will create a new line and Shift+Enter will send the message. By default, Enter sends the message and Shift+Enter creates a new line.",
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.invertEnterSendBehavior)
-					.onChange(async (value) => {
-						this.plugin.settings.invertEnterSendBehavior = value;
-						await this.saveSettings();
-					}),
-			);
-
-		new Setting(containerEl)
-			.setName("System prompt")
-			.setDesc(
-				"Configure the system prompt used for new chat conversations.",
-			)
-			.addTextArea((text) => {
-				text.inputEl.rows = 4;
-				text.inputEl.cols = 50;
-				return text
-					.setPlaceholder("Enter a system prompt for Copilot Chat.")
-					.setValue(this.plugin.settings.systemPrompt)
-					.onChange(
-						debounce(
-							async (value) => {
-								this.plugin.settings.systemPrompt = value;
-								await this.saveSettings(false, true);
-							},
-							1000,
-							true,
-						),
-					);
-			});
 	}
 
 	public hide(): void {
